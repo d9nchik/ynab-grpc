@@ -4,16 +4,56 @@ import {
     GetBudgetsResponse,
     GetTransactionsByAccountRequest,
     GetTransactionsByAccountResponse, TransactionClearedStatus, TransactionFlagColor,
+    UpdateTransactionsRequest,
+    UpdateTransactionsResponse,
     YnabAPIServer
 } from "../generated/contract";
 import {sendUnaryData, ServerUnaryCall, UntypedHandleCall} from "@grpc/grpc-js";
 import * as ynab from "ynab";
 
 export class YnabAPIServ implements YnabAPIServer {
+    async updateTransactions(call: ServerUnaryCall<UpdateTransactionsRequest, UpdateTransactionsResponse>, callback: sendUnaryData<UpdateTransactionsResponse>) {
+        try {
+            const ynabAPI = new ynab.API(call.request.authentication?.accessToken || '');
+            const transactions: Array<ynab.SaveTransactionWithId> = call.request.patchTransactionWrapper?.transactions.map(t => ({
+                id: t.id || undefined,
+                account_id: t.accountId || undefined,
+                date: t.date || undefined,
+                amount: t.amount || undefined,
+                payee_id: t.payeeId || undefined,
+                payee_name: t.payeeName || undefined,
+                category_id: t.categoryId || undefined,
+                memo: t.memo || undefined,
+                cleared: protoTypeToClear(t.cleared),
+                approved: t.approved || undefined,
+                flag_color: protoTypeToFlagColor(t.flagColor),
+                import_id: t.importId || undefined,
+                subtransactions: t.subtransactions?.map(s => ({
+                    amount: s.amount,
+                    memo: s.memo || undefined,
+                    payee_id: s.payeeId || undefined,
+                    payee_name: s.payeeName || undefined,
+                    category_id: s.categoryId || undefined,
+                }))
+            })) || [];
+
+            const response = await ynabAPI.transactions.updateTransactions(call.request.budgetId, {transactions});
+
+            callback(null, {
+                serverKnowledge: response.data.server_knowledge,
+            })
+
+        } catch (e) {
+            console.log(e);
+            callback(new Error("internal error"), null);
+        }
+    }
+
 
     async getTransactionsByAccount(call: ServerUnaryCall<GetTransactionsByAccountRequest, GetTransactionsByAccountResponse>, callback: sendUnaryData<GetTransactionsByAccountResponse>) {
         try {
             const ynabAPI = new ynab.API(call.request.authentication?.accessToken || '');
+
             let transactions: ynab.TransactionsResponse;
             if (call.request.serverKnowledge) {
                 transactions = await ynabAPI.transactions.getTransactionsByAccount(call.request.budgetId, call.request.accountId, undefined, undefined, call.request.serverKnowledge);
@@ -177,5 +217,35 @@ function transactionFlagColorToProtoType(flagColor: ynab.TransactionFlagColor | 
             return TransactionFlagColor.PURPLE
         default:
             return TransactionFlagColor.FLAG_COLOR_UNSPECIFIED;
+    }
+}
+
+function protoTypeToClear(cleared: TransactionClearedStatus): ynab.TransactionClearedStatus | undefined {
+    switch (cleared) {
+        case TransactionClearedStatus.CLEARED:
+            return ynab.TransactionClearedStatus.Cleared;
+        case TransactionClearedStatus.UNCLEARED:
+            return ynab.TransactionClearedStatus.Uncleared;
+        case TransactionClearedStatus.RECONCILED:
+            return ynab.TransactionClearedStatus.Reconciled;
+    }
+}
+
+function protoTypeToFlagColor(flagColor: TransactionFlagColor): ynab.TransactionFlagColor | undefined {
+    switch (flagColor) {
+        case TransactionFlagColor.RED:
+            return ynab.TransactionFlagColor.Red;
+        case TransactionFlagColor.ORANGE:
+            return ynab.TransactionFlagColor.Orange;
+        case TransactionFlagColor.YELLOW:
+            return ynab.TransactionFlagColor.Yellow;
+        case TransactionFlagColor.GREEN:
+            return ynab.TransactionFlagColor.Green;
+        case TransactionFlagColor.BLUE:
+            return ynab.TransactionFlagColor.Blue;
+        case TransactionFlagColor.PURPLE:
+            return ynab.TransactionFlagColor.Purple;
+        case TransactionFlagColor.FLAG_COLOR_UNSPECIFIED:
+            return undefined;
     }
 }

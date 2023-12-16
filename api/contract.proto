@@ -5,6 +5,7 @@ package ynab.grpc;
 service YnabAPI {
   rpc GetBudgets(GetBudgetsRequest) returns (GetBudgetsResponse) {}
   rpc GetTransactionsByAccount(GetTransactionsByAccountRequest) returns (GetTransactionsByAccountResponse) {}
+  rpc UpdateTransactions(UpdateTransactionsRequest) returns (UpdateTransactionsResponse) {}
 }
 
 
@@ -151,4 +152,42 @@ message SubTransaction {
   string transfer_account_id = 9;
   string transfer_transaction_id = 10;
   bool deleted = 11;
+}
+
+message UpdateTransactionsRequest {
+  Authentication authentication = 1;
+  string budget_id = 2;
+  PatchTransactionsWrapper patch_transaction_wrapper = 3;
+}
+
+message PatchTransactionsWrapper {
+  repeated SaveTransactionWithId transactions = 1;
+}
+
+message SaveTransactionWithId {
+  string id = 1;
+  string account_id = 2;
+  string date = 3;
+  int64 amount = 4;
+  string payee_id = 5;
+  string payee_name = 6;
+  string category_id = 7;
+  string memo = 8;
+  TransactionClearedStatus cleared = 9;
+  bool approved = 10;
+  TransactionFlagColor flag_color = 11;
+  string import_id = 12;
+  repeated SaveSubTransaction subtransactions = 13;
+}
+
+message SaveSubTransaction {
+  int64 amount = 1;
+  string payee_id = 2;
+  string payee_name = 3;
+  string category_id = 4;
+  string memo = 5;
+}
+
+message UpdateTransactionsResponse {
+  int64 server_knowledge = 1;
 }
