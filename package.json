@@ -8,7 +8,6 @@
     "build": "npx tsc",
     "start": "node out/index.js",
     "install-grpc-tools": "npm install -g grpc-tools",
-    "generate-grpc": "mkdir -p generated && cd api && grpc_tools_node_protoc --js_out=import_style=commonjs,binary:../generated --grpc_out=grpc_js:../generated --plugin=protoc-gen-grpc=`which grpc_tools_node_protoc_plugin` ./contract.proto",
     "generate-ts": "mkdir -p generated && cd api && protoc --plugin=../node_modules/.bin/protoc-gen-ts_proto --ts_proto_out=../generated  --ts_proto_opt=outputServices=grpc-js --ts_proto_opt=esModuleInterop=true ./contract.proto"
   },
   "keywords": [],
@@ -16,11 +15,10 @@
   "license": "ISC",
   "dependencies": {
     "@grpc/grpc-js": "^1.9.13",
-    "@grpc/proto-loader": "^0.7.10",
-    "ts-proto": "^1.165.1",
     "ynab": "^2.2.0"
   },
   "devDependencies": {
-    "typescript": "^5.3.3"
+    "typescript": "^5.3.3",
+    "ts-proto": "^1.165.1"
   }
 }
