@@ -4,6 +4,7 @@ package ynab.grpc;
 
 service YnabAPI {
   rpc GetBudgets(GetBudgetsRequest) returns (GetBudgetsResponse) {}
+  rpc GetTransactionsByAccount(GetTransactionsByAccountRequest) returns (GetTransactionsByAccountResponse) {}
 }
 
 
@@ -81,4 +82,73 @@ enum AccountType {
   PERSONAL_LOAN = 11;
   MEDICAL_DEBT = 12;
   OTHER_DEBT = 13;
+}
+
+message GetTransactionsByAccountRequest {
+  Authentication authentication = 1;
+  string budget_id = 2;
+  string account_id = 3;
+  int64 server_knowledge = 4;
+}
+
+message GetTransactionsByAccountResponse {
+  repeated TransactionDetail transactions = 1;
+  int64 server_knowledge = 2;
+}
+
+message TransactionDetail {
+  string id = 1;
+  string date = 2;
+  int64 amount = 3;
+  string memo = 4;
+  TransactionClearedStatus cleared = 5;
+  bool approved = 6;
+  TransactionFlagColor flag_color = 7;
+  string account_id = 8;
+  string payee_id = 9;
+  string category_id = 10;
+  string transfer_account_id = 11;
+  string transfer_transaction_id = 12;
+  string matched_transaction_id = 13;
+  string import_id = 14;
+  string import_payee_name = 15;
+  string import_payee_name_original = 16;
+  //  string debt_transaction_type = 17;
+  bool deleted = 18;
+  string account_name = 19;
+  string payee_name = 20;
+  string category_name = 21;
+  repeated SubTransaction subtransactions = 22;
+}
+
+enum TransactionClearedStatus {
+  CLEARED_STATUS_UNSPECIFIED = 0;
+  CLEARED = 1;
+  UNCLEARED = 2;
+  RECONCILED = 3;
+}
+
+enum TransactionFlagColor {
+  FLAG_COLOR_UNSPECIFIED = 0;
+  RED = 1;
+  ORANGE = 2;
+  YELLOW = 3;
+  GREEN = 4;
+  BLUE = 5;
+  PURPLE = 6;
+}
+
+
+message SubTransaction {
+  string id = 1;
+  string transaction_id = 2;
+  int64 amount = 3;
+  string memo = 4;
+  string payee_id = 5;
+  string payee_name = 6;
+  string category_id = 7;
+  string category_name = 8;
+  string transfer_account_id = 9;
+  string transfer_transaction_id = 10;
+  bool deleted = 11;
 }

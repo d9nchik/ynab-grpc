@@ -1,8 +1,70 @@
-import {AccountType, GetBudgetsRequest, GetBudgetsResponse, YnabAPIServer} from "../generated/contract";
+import {
+    AccountType,
+    GetBudgetsRequest,
+    GetBudgetsResponse,
+    GetTransactionsByAccountRequest,
+    GetTransactionsByAccountResponse, TransactionClearedStatus, TransactionFlagColor,
+    YnabAPIServer
+} from "../generated/contract";
 import {sendUnaryData, ServerUnaryCall, UntypedHandleCall} from "@grpc/grpc-js";
 import * as ynab from "ynab";
 
 export class YnabAPIServ implements YnabAPIServer {
+
+    async getTransactionsByAccount(call: ServerUnaryCall<GetTransactionsByAccountRequest, GetTransactionsByAccountResponse>, callback: sendUnaryData<GetTransactionsByAccountResponse>) {
+        try {
+            const ynabAPI = new ynab.API(call.request.authentication?.accessToken || '');
+            let transactions: ynab.TransactionsResponse;
+            if (call.request.serverKnowledge) {
+                transactions = await ynabAPI.transactions.getTransactionsByAccount(call.request.budgetId, call.request.accountId, undefined, undefined, call.request.serverKnowledge);
+            } else {
+                transactions = await ynabAPI.transactions.getTransactionsByAccount(call.request.budgetId, call.request.accountId);
+            }
+
+            const res: GetTransactionsByAccountResponse = {
+                serverKnowledge: transactions.data.server_knowledge,
+                transactions: transactions.data.transactions.map(t => ({
+                    id: t.id,
+                    date: t.date,
+                    amount: t.amount,
+                    memo: t.memo || '',
+                    cleared: clearToProtoType(t.cleared),
+                    approved: t.approved,
+                    flagColor: transactionFlagColorToProtoType(t.flag_color),
+                    accountId: t.account_id,
+                    payeeId: t.payee_id || '',
+                    categoryId: t.category_id || '',
+                    transferAccountId: t.transfer_account_id || '',
+                    transferTransactionId: t.transfer_transaction_id || '',
+                    matchedTransactionId: t.matched_transaction_id || '',
+                    importId: t.import_id || '',
+                    deleted: t.deleted,
+                    importPayeeName: t.import_payee_name || '',
+                    importPayeeNameOriginal: t.import_payee_name_original || '',
+                    accountName: t.account_name || '',
+                    payeeName: t.payee_name || '',
+                    categoryName: t.category_name || '',
+                    subtransactions: t.subtransactions?.map(s => ({
+                        id: s.id,
+                        transactionId: s.transaction_id,
+                        amount: s.amount,
+                        memo: s.memo || '',
+                        payeeId: s.payee_id || '',
+                        payeeName: s.payee_name || '',
+                        categoryId: s.category_id || '',
+                        categoryName: s.category_name || '',
+                        transferAccountId: s.transfer_account_id || '',
+                        transferTransactionId: s.transfer_transaction_id || '',
+                        deleted: s.deleted,
+                    }))
+                }))
+            }
+            callback(null, res);
+        } catch (e) {
+            console.log(e);
+            callback(new Error("internal error"), null);
+        }
+    }
 
 
     async getBudgets(call: ServerUnaryCall<GetBudgetsRequest, GetBudgetsResponse>, callback: sendUnaryData<GetBudgetsResponse>) {
@@ -85,5 +147,35 @@ function accountTypeToProtoType(accountType: ynab.AccountType): AccountType {
             return AccountType.MEDICAL_DEBT;
         case ynab.AccountType.OtherDebt:
             return AccountType.OTHER_DEBT;
+    }
+}
+
+function clearToProtoType(cleared: ynab.TransactionClearedStatus): TransactionClearedStatus {
+    switch (cleared) {
+        case ynab.TransactionClearedStatus.Cleared:
+            return TransactionClearedStatus.CLEARED;
+        case ynab.TransactionClearedStatus.Uncleared:
+            return TransactionClearedStatus.UNCLEARED;
+        case ynab.TransactionClearedStatus.Reconciled:
+            return TransactionClearedStatus.RECONCILED;
+    }
+}
+
+function transactionFlagColorToProtoType(flagColor: ynab.TransactionFlagColor | null | undefined): TransactionFlagColor {
+    switch (flagColor) {
+        case ynab.TransactionFlagColor.Red:
+            return TransactionFlagColor.RED;
+        case ynab.TransactionFlagColor.Orange:
+            return TransactionFlagColor.ORANGE;
+        case ynab.TransactionFlagColor.Yellow:
+            return TransactionFlagColor.YELLOW;
+        case ynab.TransactionFlagColor.Green:
+            return TransactionFlagColor.GREEN;
+        case ynab.TransactionFlagColor.Blue:
+            return TransactionFlagColor.BLUE;
+        case ynab.TransactionFlagColor.Purple:
+            return TransactionFlagColor.PURPLE
+        default:
+            return TransactionFlagColor.FLAG_COLOR_UNSPECIFIED;
     }
 }
