@@ -1,0 +1,84 @@
+syntax = 'proto3';
+
+package ynab.grpc;
+
+service YnabAPI {
+  rpc GetBudgets(GetBudgetsRequest) returns (GetBudgetsResponse) {}
+}
+
+
+message Authentication {
+  string access_token = 1;
+}
+
+message GetBudgetsRequest {
+  Authentication authentication = 1;
+}
+
+message GetBudgetsResponse {
+  repeated BudgetSummary budgets = 1;
+}
+
+message BudgetSummary {
+  string id = 1;
+  string name = 2;
+  string last_modified_on = 3;
+  string first_month = 4;
+  string last_month = 5;
+  DateFormat date_format = 6;
+  CurrencyFormat currency_format = 7;
+  repeated Account accounts = 8;
+}
+
+message DateFormat {
+  string format = 1;
+}
+
+message CurrencyFormat {
+  string iso_code = 1;
+  string example_format = 2;
+  int64 decimal_digits = 3;
+  string decimal_separator = 4;
+  bool symbol_first = 5;
+  string group_separator = 6;
+  string currency_symbol = 7;
+  bool display_symbol = 8;
+}
+
+message Account {
+  string id = 1;
+  string name = 2;
+  AccountType type = 3;
+  bool on_budget = 4;
+  bool closed = 5;
+  string note = 6;
+  int64 balance = 7;
+  int64 cleared_balance = 8;
+  int64 uncleared_balance = 9;
+  string transfer_payee_id = 10;
+  bool direct_import_linked = 11;
+  bool direct_import_in_error = 12;
+  string last_reconciled_at = 13;
+  int64 debt_original_balance = 14;
+  //  int64 debt_interest_rates = 15;
+  //  int64 debt_interest_payments = 16;
+  //  int64 debt_escrow_amounts = 17;
+  bool deleted = 18;
+}
+
+enum AccountType {
+  ACCOUNT_TYPE_UNSPECIFIED = 0;
+  CHECKING = 1;
+  SAVINGS = 2;
+  CASH = 3;
+  CREDIT_CARD = 4;
+  LINE_OF_CREDIT = 5;
+  OTHER_ASSET = 6;
+  OTHER_LIABILITY = 7;
+  MORTGAGE = 8;
+  AUTO_LOAN = 9;
+  STUDENT_LOAN = 10;
+  PERSONAL_LOAN = 11;
+  MEDICAL_DEBT = 12;
+  OTHER_DEBT = 13;
+}
